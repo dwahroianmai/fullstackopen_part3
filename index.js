@@ -25,19 +25,20 @@ app.get("/api/persons", (request, response) => {
 // get one person from the phonebook
 app.get("/api/persons/:id", (request, response) => {
   Person.findById(request.params.id)
-    .then((person) => response.json(person))
+    .then((person) =>
+      person ? response.json(person) : response.status(404).end()
+    )
     .catch((error) => {
       console.log(error);
-      response.status(404).end();
+      response.status(400).send({ error: "malformatted id" });
     });
 });
 
 // delete the person from the phonebook
 app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  persons = persons.filter((p) => p.id !== id);
-
-  response.status(204).end();
+  Person.findByIdAndRemove(request.params.id)
+    .then(() => response.status(204).end())
+    .catch((error) => console.log(error));
 });
 
 // adds a new person to the phonebook
@@ -76,6 +77,12 @@ app.get("/info", (request, response) => {
     `
   );
 });
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
+app.use(unknownEndpoint);
 
 const PORT = process.env.PORT;
 app.listen(PORT);
