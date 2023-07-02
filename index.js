@@ -42,23 +42,28 @@ app.delete("/api/persons/:id", (request, response) => {
 
 // adds a new person to the phonebook
 app.post("/api/persons", (request, response) => {
-  const person = request.body;
-  const existingPerson = persons.filter((p) => p.name === person.name);
-  if (!person.name || !person.number) {
-    response.status(400).json({ error: "the name or number is missing" });
-  } else if (existingPerson.length !== 0) {
-    response
-      .status(400)
-      .json({ error: "the name already exists in the phonebook" });
-  } else {
-    const newPerson = {
-      id: Math.round(Math.random() * 10000000000),
-      name: person.name,
-      number: person.number,
-    };
-    persons = persons.concat(newPerson);
-    response.json(newPerson);
+  const body = request.body;
+
+  if (!body.name || !body.number) {
+    return response.status(400).json({ error: "name or number is missing " });
   }
+
+  Person.find({}).then((people) => {
+    const existing = people.filter((p) => p.name === body.name);
+    if (existing.length > 0) {
+      response
+        .status(400)
+        .json({ error: "person with this name already exists" })
+        .end();
+    } else {
+      const person = new Person({
+        name: body.name,
+        number: body.number,
+      });
+
+      person.save().then((savedPerson) => response.json(savedPerson));
+    }
+  });
 });
 
 // get info about the phonebook
