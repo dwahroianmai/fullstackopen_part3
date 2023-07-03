@@ -16,37 +16,34 @@ app.use(
 );
 
 // get the list of all people in the phonebook
-app.get("/api/persons", (request, response) => {
+app.get("/api/persons", (request, response, next) => {
   Person.find({})
     .then((people) => response.json(people))
-    .catch((error) => console.log(error));
+    .catch((error) => next(error));
 });
 
 // get one person from the phonebook
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (request, response, next) => {
   Person.findById(request.params.id)
     .then((person) =>
       person ? response.json(person) : response.status(404).end()
     )
-    .catch((error) => {
-      console.log(error);
-      response.status(400).send({ error: "malformatted id" });
-    });
+    .catch((error) => next(error));
 });
 
 // delete the person from the phonebook
-app.delete("/api/persons/:id", (request, response) => {
+app.delete("/api/persons/:id", (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
     .then(() => response.status(204).end())
-    .catch((error) => console.log(error));
+    .catch((error) => next(error));
 });
 
 // adds a new person to the phonebook
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
 
   if (!body.name || !body.number) {
-    return response.status(400).json({ error: "name or number is missing " });
+    return response.status(400).send({ error: "name or number is missing " });
   }
 
   Person.find({}).then((people) => {
@@ -54,7 +51,7 @@ app.post("/api/persons", (request, response) => {
     if (existing.length > 0) {
       response
         .status(400)
-        .json({ error: "person with this name already exists" })
+        .send({ error: "person with this name already exists" })
         .end();
     } else {
       const person = new Person({
@@ -62,7 +59,10 @@ app.post("/api/persons", (request, response) => {
         number: body.number,
       });
 
-      person.save().then((savedPerson) => response.json(savedPerson));
+      person
+        .save()
+        .then((savedPerson) => response.json(savedPerson))
+        .catch((error) => next(error));
     }
   });
 });
@@ -83,6 +83,18 @@ const unknownEndpoint = (request, response) => {
 };
 
 app.use(unknownEndpoint);
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT);
