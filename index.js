@@ -85,14 +85,18 @@ app.put("/api/persons/:id", (request, response, next) => {
 });
 
 // get info about the phonebook
-app.get("/info", (request, response) => {
-  let people_number = persons.length;
-  response.send(
-    `
-    <p>Phonebook has info for ${people_number} people.</p>
+app.get("/info", (request, response, next) => {
+  Person.find({})
+    .then((people) => {
+      const peopleNumber = people.length;
+      response.send(
+        `
+    <p>Phonebook has info for ${peopleNumber} people.</p>
     <p>${new Date(Date.now())}</p>
     `
-  );
+      );
+    })
+    .catch((error) => next(error));
 });
 
 const unknownEndpoint = (request, response) => {
