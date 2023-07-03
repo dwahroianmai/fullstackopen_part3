@@ -67,6 +67,23 @@ app.post("/api/persons", (request, response, next) => {
   });
 });
 
+app.put("/api/persons/:id", (request, response, next) => {
+  const body = request.body;
+
+  if (!body.number) {
+    return response.status(400).send({ error: "no new number" });
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  };
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => response.json(updatedPerson))
+    .catch((error) => next(error));
+});
+
 // get info about the phonebook
 app.get("/info", (request, response) => {
   let people_number = persons.length;
